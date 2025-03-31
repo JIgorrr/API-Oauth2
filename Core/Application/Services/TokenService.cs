@@ -24,18 +24,18 @@ public class TokenService(IUnitOfWork unitOfWork, ICertificateService certificat
 
             _clientCredentialsValidation.ValidationHandler(ValueTuple.Create(clientCredentialsDTO, clientCredentials).Adapt<CredentialsValidationDTO>());
 
-            //CertificateManagement? certificateManagement = await _unitOfWork.CertificateManagementRepository.GetById(clientCredentials.Id);
+            CertificateManagement? certificateManagement = await _unitOfWork.CertificateManagementRepository.GetById(clientCredentials.Id);
 
-            //string? certificatePassword = null;
+            string? certificatePassword = null;
 
-            //if(!string.IsNullOrWhiteSpace(certificateManagement?.Password))
-            //    certificatePassword = _aesCryptographyService.Decrypt(certificateManagement?.Password, certificateManagement?.Key, certificateManagement?.Vector);
+            if(!string.IsNullOrWhiteSpace(certificateManagement?.Password))
+                certificatePassword = _aesCryptographyService.Decrypt(certificateManagement?.Password, certificateManagement?.Key, certificateManagement?.Vector);
 
-            //_certificateService.LoadCertificate(ValueTuple.Create(certificateManagement?.FilePath, certificatePassword).Adapt<CertificateInfoDTO>());
+            _certificateService.LoadCertificate(ValueTuple.Create(certificateManagement?.FilePath, certificatePassword).Adapt<CertificateInfoDTO>());
 
             Dictionary<string, string?> payload = CreateClaims(clientCredentialsDTO.Adapt<ClaimsInfoDTO>());
 
-            string jwt = JWT.Encode(payload, null, JwsAlgorithm.none);
+            string jwt = JWT.Encode(payload, _certificateService.GetPrivateKey, JwsAlgorithm.RS256);
 
             return new TokenDetailsDTO()
             {
